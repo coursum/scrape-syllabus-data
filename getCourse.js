@@ -2,21 +2,20 @@ const request = require('request');
 const fs = require('fs');
 const cheerio = require('cheerio');
 
-module.exports = (id) => {
+module.exports = (id, success, error) => {
     const url = 'https://syllabus.sfc.keio.ac.jp/courses/' + id;
 
     request(url, (errorJp, responseJp, bodyJp) => {
         request(url + '?locale=en', (errorEn, responseEn, bodyEn) => {
             if (errorEn || errorJp) {
-                console.error(`Error loading data for ${url}`);
-                console.error(errorEn);
-                console.error(errorJp);
+                error(errorEn, errorJp);
                 return;
             }
 
             const fileName = `data/${id}.json`;
-            fs.writeFile(fileName, JSON.stringify(buildObject(bodyJp, bodyEn)), () => {
-                console.log(`Done writing ${fileName}`);
+            const obj = buildObject(bodyJp, bodyEn);
+            fs.writeFile(fileName, JSON.stringify(obj), () => {
+                success(obj);
             });
         });
     });
