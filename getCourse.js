@@ -43,7 +43,11 @@ function buildObject(bodyJp, bodyEn) {
                 "jp" : null,
                 "kana" : null
             },
-            "name": dom('h2 .title').text() + '/' + domEn('h2 .title').text()
+            "name": {
+                "en" : domEn('h2 .title').text(),
+                "jp" : dom('h2 .title').text(),
+                "kana" : null
+            }
         },
         "schedule": getSchedule(dom, domEn),
         "related" : null,
