@@ -3,7 +3,7 @@ const cheerio = require('cheerio');
 const fs = require('fs');
 const getCourseData = require('./getCourse');
 
-const url = '/courses?locale=ja&search%5Btitle%5D=&search%5Byear%5D=2021&search%5Bsemester%5D=&search%5Bsub_semester%5D=&search%5Bteacher_name%5D=&search%5Bsummary%5D=&button=';
+const initialPath = '/courses?locale=ja&search%5Btitle%5D=&search%5Byear%5D=2021&search%5Bsemester%5D=&search%5Bsub_semester%5D=&search%5Bteacher_name%5D=&search%5Bsummary%5D=&button=';
 
 let count = 1;
 let errors = 0;
@@ -45,11 +45,11 @@ function scanPage(path) {
         } else if (errors > 0) {
             console.log(`${errors} errors - trying again!`);
             errors = 0;
-            scanPage(url);
+            scanPage(initialPath);
         } else {
             console.log(`Done - got ${files} courses`);
         }
     });
 }
 
-scanPage(url);
+scanPage(initialPath);
