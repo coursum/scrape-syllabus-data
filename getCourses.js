@@ -1,55 +1,96 @@
-const request = require('request');
+const axios = require('axios');
 const cheerio = require('cheerio');
-const fs = require('fs');
 const getCourseData = require('./getCourse');
 
-const initialPath = '/courses?locale=ja&search%5Btitle%5D=&search%5Byear%5D=2021&search%5Bsemester%5D=&search%5Bsub_semester%5D=&search%5Bteacher_name%5D=&search%5Bsummary%5D=&button=';
+const host = 'https://syllabus.sfc.keio.ac.jp/courses';
+const defaultQuery = new URLSearchParams('locale=ja&search%5Btitle%5D=&search%5Byear%5D=2021&search%5Bsemester%5D=&search%5Bsub_semester%5D=&search%5Bteacher_name%5D=&search%5Bsummary%5D=&button=');
 
-let count = 1;
-let errors = 0;
-let files = 0;
-
-function scanPage(path) {
-    const url = 'https://syllabus.sfc.keio.ac.jp' + path;
-    request(url, (error, response, body) => {
-        if (error) {
-            console.error(`Error loading data for ${url}`);
-            console.error(error);
-            return;
-        }
-        const dom = cheerio.load(body);
-        const nextLink = dom('.next a').attr('href');
-        console.log(`Page ${count}: ${dom('.detail-btn').length} courses have a link`);
-        dom('.detail-btn').each((index, elem) => {
-            const courseId = dom(elem).attr('href').replace('/courses/', '')
-                .split('?')[0];
-            console.log(courseId);
-            if (!fs.existsSync(`data/${courseId}.json`)) {
-                getCourseData(courseId, () => {
-                    console.log(`Done writing ${courseId}`);
-                    files++;
-                },
-                (errorJp, errorEn) => {
-                    console.error(`Error loading data for ${courseId}`);
-                    // console.error(errorEn);
-                    // console.error(errorJp);
-                    errors++;
-                });
-            } else {
-                console.log(`Skipping ${courseId} - already loaded`);
-            }
-        });
-        if (nextLink) {
-            count++;
-            scanPage(nextLink);
-        } else if (errors > 0) {
-            console.log(`${errors} errors - trying again!`);
-            errors = 0;
-            scanPage(initialPath);
-        } else {
-            console.log(`Done - got ${files} courses`);
-        }
-    });
+async function allSettled(promises) {
+  return (await Promise.allSettled(promises)).reduce(
+    (result, { status, value, reason }) => {
+      result[status].push(value ?? reason);
+      return result;
+    },
+    { fulfilled: [], rejected: [] },
+  );
 }
 
-scanPage(initialPath);
+async function getPageCount() {
+  const url = `${host}?${defaultQuery.toString()}`;
+  let pageCount;
+
+  try {
+    const dom = cheerio.load((await axios.get(url)).data);
+    const UrlLastPage = new URL(host + dom('.pager .pagination .last a').attr('href'));
+    const queryPage = UrlLastPage.searchParams.get('page');
+
+    pageCount = Number(queryPage);
+  } catch (error) {
+    console.error('Error: failed to get page count');
+
+    throw error;
+  }
+
+  return pageCount;
+}
+
+async function getCourseIdsInPage(pageNumber) {
+  defaultQuery.set('page', pageNumber);
+  const url = `${host}?${defaultQuery.toString()}`;
+
+  let courseIds;
+  try {
+    const dom = cheerio.load((await axios.get(url)).data);
+    const detailButtons = dom('.detail-btn');
+
+    console.log(`Page ${pageNumber}: ${detailButtons.length} courses have a link`);
+
+    courseIds = Array.from(detailButtons).map((detailButton) => (
+      dom(detailButton).attr('href')
+        .match(/^\/courses\/(?<courseId>.*?)\?/)
+        ?.groups
+        .courseId
+    ));
+  } catch (error) {
+    console.error(`Error: failed to get course ids in page ${pageNumber}`);
+
+    throw error;
+  }
+
+  return courseIds;
+}
+
+async function getCourses() {
+  const pageCount = await getPageCount();
+
+  const scanAllPages = (
+    Array(pageCount).fill()
+      .map((_, index) => index + 1)
+      .map((page) => getCourseIdsInPage(page))
+  );
+
+  const { fulfilled: allCourseIds, rejected: pageErrors } = await allSettled(scanAllPages);
+  if (pageErrors.length > 0) {
+    console.log(`${pageErrors.length} page errors`);
+    pageErrors.forEach((error) => console.error(error));
+  }
+
+  const uniqueCourseIds = Array.from(new Set(allCourseIds.flat()));
+
+  const courses = [];
+  const errors = [];
+
+  // eslint-disable-next-line no-restricted-syntax
+  for await (const courseId of uniqueCourseIds) {
+    try {
+      const course = await getCourseData(courseId);
+      courses.push([courseId, course]);
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+
+  return { fulfilled: courses, rejected: errors };
+}
+
+module.exports = getCourses;

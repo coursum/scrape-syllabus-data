@@ -1,131 +1,201 @@
-const request = require('request');
-const fs = require('fs');
+const axios = require('axios');
 const cheerio = require('cheerio');
 
-module.exports = (id, success, error) => {
-    const url = 'https://syllabus.sfc.keio.ac.jp/courses/' + id;
-
-    request(url, (errorJp, responseJp, bodyJp) => {
-        request(url + '?locale=en', (errorEn, responseEn, bodyEn) => {
-            if (errorEn || errorJp) {
-                error(errorEn, errorJp);
-                return;
-            }
-
-            const fileName = `data/${id}.json`;
-            const obj = buildObject(bodyJp, bodyEn);
-            fs.writeFile(fileName, JSON.stringify(obj), () => {
-                success(obj);
-            });
-        });
-    });
-}
-
-function buildObject(bodyJp, bodyEn) {
-    const dom = cheerio.load(bodyJp);
-    const domEn = cheerio.load(bodyEn);
-    return {
-        "category" : {
-            "en" : getDD('Field (Undergraduate) ', domEn),
-            "jp" : getDD('分野', dom),
-            "kana" : null
-        },
-        "language" : {
-            "en" : getDD('Language', domEn),
-            "jp" : getDD('言語', dom),
-            "kana" : null
-        },
-        "lecturers" : getLecturers(dom, domEn),
-        "title" : {
-            "postscript" : {
-                "en" : null,
-                "jp" : null,
-                "kana" : null
-            },
-            "name": {
-                "en" : domEn('h2 .title').text(),
-                "jp" : dom('h2 .title').text(),
-                "kana" : null
-            }
-        },
-        "schedule": getSchedule(dom, domEn),
-        "related" : null,
-        "registration" : {
-            "number" : null,
-            "suggestion" : {
-                "en" : "",
-                "jp" : "",
-                "kana" : null
-            },
-            "requirement" : {
-                "en" : "",
-                "jp" : "",
-                "kana" : null
-            },
-            "prerequisite" : null
-        },
-        "classroom" : getDD('開講場所', dom),
-        "summary" : {
-            "en" : getDD('Course Summary', domEn),
-            "jp" : getDD('講義概要', dom),
-            "kana" : null
-        },
-        "types" : null,
-        "yearClassId" : null,
-        "tag" : {
-            "giga" : getDD('GIGAサティフィケート対象', dom) === '対象'
-        },
-        "curriculumCode" : getDD('科目ソート', dom),
-        "credit" : parseInt(getDD('単位', dom))
-    };
-}
-
 function getDD(label, dom) {
-    return dom('dt').filter((index, elem) => dom(elem).text().includes(label)).first().next('dd').text().trim();
+  return dom('dt').filter((index, elem) => dom(elem).text().includes(label))
+    .first()
+    .next('dd')
+    .text()
+    .trim();
 }
 
 function getLecturers(dom, domEn) {
-    const lecturers = [];
+  const namesJa = getDD('授業教員名', dom).split(',');
+  const namesEn = getDD('Lecturer Name', domEn).split(',');
 
-    const namesEn = getDD('Lecturer Name', domEn).split(',');
-    const namesJp = getDD('授業教員名', dom).split(',');
+  // TODO: check if namesJa.length === namesEn.length
+  const lecturers = namesJa.map((_, i) => ({
+    id: null,
+    imgUrl: null,
+    name: {
+      ja: namesJa[i],
+      en: namesEn[i],
+    },
+    email: '',
+    inCharge: true,
+  }));
 
-    for (let i = 0; i < namesJp.length; i++) {
-        lecturers.push({
-            "imgUrl" : null,
-            "name" : {
-                "en" : namesEn[i],
-                "jp" : namesJp[i],
-                "kana" : ''
-            },
-            "id" : null,
-            "email" : "",
-            "inCharge" : true
-        });
-    }
-
-    return lecturers;
+  return lecturers;
 }
 
 function getSchedule(dom, domEn) {
-    const titleJp = dom('h2 .title').text();
-    const half = titleJp.includes('学期前半') ? '前半' : (titleJp.includes('学期後半') ? '後半' : null);
-    return {
-        "year" : parseInt(getDD('開講年度・学期', dom)),
-        "span" : {
-            "en" : half === '前半' ? 'First half' : (half === '後半' ? 'Second half' : null),
-            "jp" : half,
-            "kana" : null
-        },
-        "semester" : {
-            "en" : getDD('開講年度・学期', dom).split(' ')[1],
-            "jp" : getDD('開講年度・学期', dom).split(' ')[1] === '春学期' ? 'Spring' : 'Fall',
-            "kana" : null
-        },
-        "times" : {
-            "en" : getDD('Day of Week・Period', domEn),
-            "jp" : getDD('曜日・時限', dom),
-            "kana" : null
-        }
-    };
+  const scheduleYear = parseInt(getDD('開講年度・学期', dom), 10);
+  const titleJa = dom('h2 .title').text();
+
+  const scheduleSemesterJa = getDD('開講年度・学期', dom).split(' ')[1];
+  const scheduleSemesterEn = scheduleSemesterJa === '春学期' ? 'Spring' : 'Fall';
+
+  const scheduleTimesJa = getDD('曜日・時限', dom);
+  const scheduleTimesEn = getDD('Day of Week・Period', domEn);
+
+  let scheduleSpanJa = null;
+  let scheduleSpanEn = null;
+
+  if (titleJa.includes('学期前半')) {
+    scheduleSpanJa = '前半';
+    scheduleSpanEn = 'First half';
+  } else if (titleJa.includes('学期後半')) {
+    scheduleSpanJa = '後半';
+    scheduleSpanEn = 'Second half';
+  }
+
+  const schedule = {
+    year: scheduleYear,
+    semester: {
+      ja: scheduleSemesterJa,
+      en: scheduleSemesterEn,
+    },
+    times: {
+      ja: scheduleTimesJa,
+      en: scheduleTimesEn,
+    },
+    span: {
+      ja: scheduleSpanJa,
+      en: scheduleSpanEn,
+    },
+  };
+
+  return schedule;
 }
+
+function buildCourseObject(id, bodyJa = '', bodyEn = '') {
+  const dom = cheerio.load(bodyJa);
+  const domEn = cheerio.load(bodyEn);
+
+  const titleNameJa = dom('h2 .title').text();
+  const titleNameEn = domEn('h2 .title').text();
+  const titlePostscriptJa = null;
+  const titlePostscriptEn = null;
+
+  const lecturers = getLecturers(dom, domEn);
+
+  const schedule = getSchedule(dom, domEn);
+
+  const classroom = getDD('開講場所', dom);
+
+  const credit = parseInt(getDD('単位', dom), 10);
+
+  const languageJa = getDD('言語', dom);
+  const languageEn = getDD('Language', domEn);
+
+  const categoryJa = getDD('分野', dom);
+  const categoryEn = getDD('Field (Undergraduate) ', domEn);
+
+  const summaryJa = getDD('講義概要', dom);
+  const summaryEn = getDD('Course Summary', domEn);
+
+  const typesJa = null;
+  const typesEn = null;
+
+  const registrationNumber = null;
+  const registrationPrerequisiteMandatory = null;
+  const registrationPrerequisiteRecommended = null;
+  const registrationRequirementJa = null;
+  const registrationRequirementEn = null;
+  const registrationSuggestionJa = null;
+  const registrationSuggestionEn = null;
+
+  const related = null;
+
+  const curriculumCode = getDD('科目ソート', dom);
+  const yearClassId = id;
+
+  const syllabusURL = null;
+
+  const tagIsGiga = getDD('GIGAサティフィケート対象', dom) === '対象';
+
+  const course = {
+    title: {
+      name: {
+        ja: titleNameJa,
+        en: titleNameEn,
+      },
+      postscript: {
+        ja: titlePostscriptJa,
+        en: titlePostscriptEn,
+      },
+    },
+    lecturers,
+    schedule,
+    classroom,
+    credit,
+    language: {
+      ja: languageJa,
+      en: languageEn,
+    },
+    summary: {
+      ja: summaryJa,
+      en: summaryEn,
+    },
+    types: {
+      ja: typesJa,
+      en: typesEn,
+    },
+    registration: {
+      number: registrationNumber,
+      prerequisite: {
+        mandatory: registrationPrerequisiteMandatory,
+        recommended: registrationPrerequisiteRecommended,
+      },
+      requirement: {
+        ja: registrationRequirementJa,
+        en: registrationRequirementEn,
+      },
+      suggestion: {
+        ja: registrationSuggestionJa,
+        en: registrationSuggestionEn,
+      },
+    },
+    related,
+    yearClassId,
+    syllabusURL,
+    tag: {
+      curriculumCode,
+      category: {
+        ja: categoryJa,
+        en: categoryEn,
+      },
+      isGIGA: tagIsGiga,
+    },
+  };
+
+  return course;
+}
+
+async function getCourse(id) {
+  const url = `https://syllabus.sfc.keio.ac.jp/courses/${id}`;
+
+  console.log(`fetching course  (id: ${id})`);
+
+  let bodyJa;
+  try {
+    bodyJa = (await axios.get(url)).data;
+  } catch (errorJa) {
+    console.error(`Error: failed to fetch JP page of course (id: ${id})`);
+    console.error(errorJa);
+  }
+
+  let bodyEn;
+  try {
+    bodyEn = (await axios.get(`${url}?locale=en`)).data;
+  } catch (errorEn) {
+    console.error(`Error: failed to fetch EN page of course (id: ${id})`);
+    console.error(errorEn);
+  }
+
+  const course = buildCourseObject(id, bodyJa, bodyEn);
+
+  return course;
+}
+
+module.exports = getCourse;
