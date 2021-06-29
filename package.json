@@ -1,13 +1,16 @@
 {
   "name": "scrape-syllabus",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
+  "repository": "https://github.com/coursum/scrape-syllabus-data.git",
+  "author": "Philipp Koch <me@philipps.blog>",
+  "contributors": [
+    "LuckyWind_sck <luckywindsck@gmail.com>"
+  ],
+  "description": "",
   "scripts": {
     "start": "node index.js"
   },
-  "keywords": [],
-  "author": "",
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
