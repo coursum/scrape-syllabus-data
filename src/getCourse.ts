@@ -1,7 +1,8 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
+import axios from 'axios';
+import type { CheerioAPI } from 'cheerio';
+import cheerio from 'cheerio';
 
-function getDD(label, dom) {
+function getDD(label: string, dom: CheerioAPI) {
   return dom('dt').filter((index, elem) => dom(elem).text().includes(label))
     .first()
     .next('dd')
@@ -9,7 +10,7 @@ function getDD(label, dom) {
     .trim();
 }
 
-function getLecturers(dom, domEn) {
+function getLecturers(dom: CheerioAPI, domEn: CheerioAPI) {
   const namesJa = getDD('授業教員名', dom).split(',');
   const namesEn = getDD('Lecturer Name', domEn).split(',');
 
@@ -28,7 +29,7 @@ function getLecturers(dom, domEn) {
   return lecturers;
 }
 
-function getSchedule(dom, domEn) {
+function getSchedule(dom: CheerioAPI, domEn: CheerioAPI) {
   const scheduleYear = parseInt(getDD('開講年度・学期', dom), 10);
   const titleJa = dom('h2 .title').text();
 
@@ -68,7 +69,7 @@ function getSchedule(dom, domEn) {
   return schedule;
 }
 
-function buildCourseObject(id, bodyJa = '', bodyEn = '') {
+function buildCourseObject(id: string, bodyJa = '', bodyEn = '') {
   const dom = cheerio.load(bodyJa);
   const domEn = cheerio.load(bodyEn);
 
@@ -172,7 +173,7 @@ function buildCourseObject(id, bodyJa = '', bodyEn = '') {
   return course;
 }
 
-async function getCourse(id) {
+async function getCourse(id: string) {
   const url = `https://syllabus.sfc.keio.ac.jp/courses/${id}`;
 
   console.log(`fetching course  (id: ${id})`);
@@ -198,4 +199,4 @@ async function getCourse(id) {
   return course;
 }
 
-module.exports = getCourse;
+export default getCourse;

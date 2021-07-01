@@ -1,17 +1,19 @@
-const fs = require('fs');
+import fs from 'fs';
 
-const getCourses = require('./getCourses');
+import getCourses from './getCourses';
 
 const dataFolder = './data';
 
-(async () => {
-  if (!fs.existsSync(dataFolder)) {
+const createDirectoryIfNotExist = async (path: string) => {
+  if (!fs.existsSync(path)) {
     await fs.promises.mkdir(dataFolder);
   }
+};
+
+(async () => {
+  await createDirectoryIfNotExist(dataFolder);
 
   const { fulfilled: courses, rejected: errors } = await getCourses();
-
-  await fs.promises.writeFile('all.json', JSON.stringify(Object.fromEntries(courses)));
 
   if (errors.length > 0) {
     console.log(`${errors.length} errors`);

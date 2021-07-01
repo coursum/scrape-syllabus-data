@@ -1,23 +1,45 @@
-const axios = require('axios');
-const cheerio = require('cheerio');
-const getCourseData = require('./getCourse');
+import axios from 'axios';
+import cheerio from 'cheerio';
+
+import getCourse from './getCourse';
 
 const host = 'https://syllabus.sfc.keio.ac.jp/courses';
-const defaultQuery = new URLSearchParams('locale=ja&search%5Btitle%5D=&search%5Byear%5D=2021&search%5Bsemester%5D=&search%5Bsub_semester%5D=&search%5Bteacher_name%5D=&search%5Bsummary%5D=&button=');
+const defaultQuery = new URLSearchParams({
+  locale: 'ja',
+  'search[title]': '',
+  'search[year]': '2021',
+  'search[semester]': '',
+  'search[sub_semester]': '',
+  'search[teacher_name]': '',
+  'search[summary]': '',
+  button: '',
+});
 
-async function allSettled(promises) {
+interface SettledResult<T> {
+  status: PromiseSettledResult<T>['status'];
+  value?: T;
+  reason?: any;
+}
+
+interface AggregatedSettledPromises<T> {
+  fulfilled: T[];
+  rejected: any[];
+}
+
+async function allSettled<T>(promises: Promise<T>[]) {
   return (await Promise.allSettled(promises)).reduce(
-    (result, { status, value, reason }) => {
+    (result, { status, value, reason }: SettledResult<T>) => {
       result[status].push(value ?? reason);
+
       return result;
     },
-    { fulfilled: [], rejected: [] },
+    { fulfilled: [], rejected: [] } as AggregatedSettledPromises<T>,
   );
 }
 
 async function getPageCount() {
   const url = `${host}?${defaultQuery.toString()}`;
-  let pageCount;
+  let pageCount: number;
 
   try {
     const dom = cheerio.load((await axios.get(url)).data);
@@ -34,23 +56,24 @@ async function getPageCount() {
   return pageCount;
 }
 
-async function getCourseIdsInPage(pageNumber) {
-  defaultQuery.set('page', pageNumber);
+async function getCourseIdsInPage(pageNumber: number) {
+  defaultQuery.set('page', String(pageNumber));
   const url = `${host}?${defaultQuery.toString()}`;
 
-  let courseIds;
+  let courseIds: string[];
   try {
     const dom = cheerio.load((await axios.get(url)).data);
     const detailButtons = dom('.detail-btn');
 
     console.log(`Page ${pageNumber}: ${detailButtons.length} courses have a link`);
 
-    courseIds = Array.from(detailButtons).map((detailButton) => (
-      dom(detailButton).attr('href')
-        .match(/^\/courses\/(?<courseId>.*?)\?/)
-        ?.groups
-        .courseId
-    ));
+    courseIds = Array.from(detailButtons).map((detailButton) => {
+      const href = dom(detailButton).attr('href') || '';
+
+      const { courseId } = href.match(/^\/courses\/(?<courseId>.*?)\?/)?.groups || {};
+
+      return courseId || '';
+    });
   } catch (error) {
     console.error(`Error: failed to get course ids in page ${pageNumber}`);
 
@@ -64,7 +87,7 @@ async function getCourses() {
   const pageCount = await getPageCount();
 
   const scanAllPages = (
-    Array(pageCount).fill()
+    Array(pageCount).fill(undefined)
       .map((_, index) => index + 1)
       .map((page) => getCourseIdsInPage(page))
   );
@@ -83,14 +106,17 @@ async function getCourses() {
   // eslint-disable-next-line no-restricted-syntax
   for await (const courseId of uniqueCourseIds) {
     try {
-      const course = await getCourseData(courseId);
-      courses.push([courseId, course]);
+      const course = await getCourse(courseId);
+      courses.push([courseId, course] as [string, typeof course]);
     } catch (error) {
       errors.push(error);
     }
   }
 
-  return { fulfilled: courses, rejected: errors };
+  return {
+    fulfilled: courses,
+    rejected: errors,
+  };
 }
 
-module.exports = getCourses;
+export default getCourses;
