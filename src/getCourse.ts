@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { CheerioAPI } from 'cheerio';
 import cheerio from 'cheerio';
+import type { Course } from 'coursum-types';
 
 function getDD(label: string, dom: CheerioAPI) {
   return dom('dt').filter((index, elem) => dom(elem).text().includes(label))
@@ -113,9 +114,9 @@ function buildCourseObject(id: string, bodyJa = '', bodyEn = '') {
 
   const syllabusURL = null;
 
-  const tagIsGiga = getDD('GIGAサティフィケート対象', dom) === '対象';
+  const tagGiga = getDD('GIGAサティフィケート対象', dom) === '対象';
 
-  const course = {
+  const course: Course = {
     title: {
       name: {
         ja: titleNameJa,
@@ -166,7 +167,7 @@ function buildCourseObject(id: string, bodyJa = '', bodyEn = '') {
         ja: categoryJa,
         en: categoryEn,
       },
-      isGIGA: tagIsGiga,
+      giga: tagGiga,
     },
   };
 

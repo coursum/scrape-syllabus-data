@@ -16,7 +16,8 @@
   "license": "ISC",
   "dependencies": {
     "axios": "^0.21.1",
-    "cheerio": "^1.0.0-rc.9"
+    "cheerio": "^1.0.0-rc.9",
+    "coursum-types": "https://github.com/coursum/coursum-types"
   },
   "devDependencies": {
     "@types/node": "^15.12.5",
