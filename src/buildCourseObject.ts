@@ -1,17 +1,19 @@
-import axios from 'axios';
 import type { CheerioAPI } from 'cheerio';
 import cheerio from 'cheerio';
 import type { Course } from 'coursum-types';
 
-function getDD(label: string, dom: CheerioAPI) {
-  return dom('dt').filter((index, elem) => dom(elem).text().includes(label))
+import type { CoursePage } from './types';
+
+const getDD = (label: string, dom: CheerioAPI) => (
+  dom('dt')
+    .filter((_index, elem) => dom(elem).text().includes(label))
     .first()
     .next('dd')
     .text()
-    .trim();
-}
+    .trim()
+);
 
-function getLecturers(dom: CheerioAPI, domEn: CheerioAPI) {
+const getLecturers = (dom: CheerioAPI, domEn: CheerioAPI) => {
   const namesJa = getDD('授業教員名', dom).split(',');
   const namesEn = getDD('Lecturer Name', domEn).split(',');
 
@@ -28,9 +30,9 @@ function getLecturers(dom: CheerioAPI, domEn: CheerioAPI) {
   }));
 
   return lecturers;
-}
+};
 
-function getSchedule(dom: CheerioAPI, domEn: CheerioAPI) {
+const getSchedule = (dom: CheerioAPI, domEn: CheerioAPI) => {
   const scheduleYear = parseInt(getDD('開講年度・学期', dom), 10);
   const titleJa = dom('h2 .title').text();
 
@@ -68,9 +70,12 @@ function getSchedule(dom: CheerioAPI, domEn: CheerioAPI) {
   };
 
   return schedule;
-}
+};
 
-function buildCourseObject(id: string, bodyJa = '', bodyEn = '') {
+const buildCourseObject = (id: string, coursePages: CoursePage) => {
+  const bodyJa = coursePages.ja;
+  const bodyEn = coursePages.en;
+
   const dom = cheerio.load(bodyJa);
   const domEn = cheerio.load(bodyEn);
 
@@ -172,32 +177,6 @@ function buildCourseObject(id: string, bodyJa = '', bodyEn = '') {
   };
 
   return course;
-}
+};
 
-async function getCourse(id: string) {
-  const url = `https://syllabus.sfc.keio.ac.jp/courses/${id}`;
-
-  console.log(`fetching course  (id: ${id})`);
-
-  let bodyJa;
-  try {
-    bodyJa = (await axios.get(url)).data;
-  } catch (errorJa) {
-    console.error(`Error: failed to fetch JP page of course (id: ${id})`);
-    console.error(errorJa);
-  }
-
-  let bodyEn;
-  try {
-    bodyEn = (await axios.get(`${url}?locale=en`)).data;
-  } catch (errorEn) {
-    console.error(`Error: failed to fetch EN page of course (id: ${id})`);
-    console.error(errorEn);
-  }
-
-  const course = buildCourseObject(id, bodyJa, bodyEn);
-
-  return course;
-}
-
-export default getCourse;
+export default buildCourseObject;
