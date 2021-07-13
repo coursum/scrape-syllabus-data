@@ -496,7 +496,7 @@ cosmiconfig@^7.0.0:
 
 "coursum-types@https://github.com/coursum/coursum-types":
   version "1.0.0"
-  resolved "https://github.com/coursum/coursum-types#505fb9128b2ac5360fa948adb9a99537c6aa67d5"
+  resolved "https://github.com/coursum/coursum-types#4321d07d032a4c681b34179fd14441f020003800"
 
 create-require@^1.1.0:
   version "1.1.1"

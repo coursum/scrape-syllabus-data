@@ -39,8 +39,18 @@ const getSchedule = (dom: CheerioAPI, domEn: CheerioAPI) => {
   const scheduleSemesterJa = getDD('開講年度・学期', dom).split(' ')[1];
   const scheduleSemesterEn = scheduleSemesterJa === '春学期' ? 'Spring' : 'Fall';
 
-  const scheduleTimesJa = getDD('曜日・時限', dom);
-  const scheduleTimesEn = getDD('Day of Week・Period', domEn);
+  const scheduleTimesJa = (
+    getDD('曜日・時限', dom).split(',')
+      .map((time) => time.trim())
+      .map((time) => [time.match(/[月火水木金土日]/)?.[0] ?? '', time.match(/\d/)?.[0] ?? ''])
+      .map(([day, period]) => day + period)
+  );
+  const scheduleTimesEn = (
+    getDD('Day of Week・Period', domEn).split(',')
+      .map((time) => time.trim())
+      .map((time) => [time.match(/Mon|Tue|Wed|Thu|Fri|Sat|Sun/)?.[0] ?? '', time.match(/\d/)?.[0] ?? ''])
+      .map(([day, period]) => day + period)
+  );
 
   let scheduleSpanJa = null;
   let scheduleSpanEn = null;
