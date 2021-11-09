@@ -1,3 +1,5 @@
+import './loadEnv';
+
 import { Command } from 'commander';
 
 import createExtractCommand from './extract';

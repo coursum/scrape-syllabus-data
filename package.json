@@ -25,7 +25,8 @@
     "axios-rate-limit": "^1.3.0",
     "cheerio": "^1.0.0-rc.9",
     "commander": "^8.0.0",
-    "coursum-types": "https://github.com/coursum/coursum-types"
+    "coursum-types": "https://github.com/coursum/coursum-types",
+    "dotenv": "^10.0.0"
   },
   "devDependencies": {
     "@types/node": "^15.12.5",

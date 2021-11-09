@@ -17,6 +17,13 @@ const http = rateLimit(axios.create(), { maxRPS: defaultMaxRPS });
 
 const host = 'https://syllabus.sfc.keio.ac.jp/courses';
 
+const { SESSION } = process.env;
+
+if (!SESSION) {
+  console.error('Doesn\'t provide session in .env');
+  process.exit();
+}
+
 const createDefaultQuery = () => {
   const defaultQuery = new URLSearchParams({
     locale: 'ja',
@@ -80,10 +87,17 @@ const fetchSearchResultPage = async (pageNumber: number, savingDirectory: string
 const fetchCourseSyllabusPage = async (courseId: string, locale: 'ja' | 'en', savingDirectory: string) => {
   const url = `https://syllabus.sfc.keio.ac.jp/courses/${courseId}?locale=${locale}`;
 
+  const Cookie = `_sfc_open_syllabus_session=${SESSION};`;
+
   let dom = '';
   try {
-    const response = await http.get(url);
+    const response = await http.get(url, { headers: { Cookie } });
     dom = response.data;
+
+    if (dom.includes('シラバスを更に閲覧するにはCNSアカウントでログインが必要です')
+    || dom.includes('To view more information, you need to log in with your CNS account.')) {
+      throw Error('Need to login, maybe session is wrong');
+    }
   } catch (error) {
     console.error(`Error: failed to fetch ${locale.toUpperCase()} page of the course (id: ${courseId})`);
     throw error;
