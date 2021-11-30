@@ -15,19 +15,25 @@ const getDD = (label: string, dom: CheerioAPI) => (
     .trim()
 );
 
+const getDL = (label: string, dom: CheerioAPI) => (
+  dom('h3')
+    .filter((_index, elem) => dom(elem).text().includes(label))
+    .first()
+    .next('dl')
+    .text()
+    .trim()
+);
+
 const getLecturers = (dom: CheerioAPI, domEn: CheerioAPI) => {
   const namesJa = getDD('授業教員名', dom).split(',');
   const namesEn = getDD('Lecturer Name', domEn).split(',');
 
-  // TODO: check if namesJa.length === namesEn.length
-  const lecturers = namesJa.map((_, i) => ({
+  return namesJa.map((_, i) => ({
     name: {
       ja: namesJa[i],
       en: namesEn[i],
     },
   }));
-
-  return lecturers;
 };
 
 const getSchedule = (dom: CheerioAPI, domEn: CheerioAPI) => {
@@ -95,9 +101,10 @@ const buildCourseObject = (id: string, coursePages: CoursePage) => {
     en: domEn('h2 .title').text().trim(),
   };
 
+  // TODO what department do we use in case of multiple departments?
   const department = {
-    ja: undefined, // TODO
-    en: undefined, // TODO
+    ja: undefined,
+    en: undefined,
   };
 
   const lecturers = getLecturers(dom, domEn);
@@ -111,9 +118,28 @@ const buildCourseObject = (id: string, coursePages: CoursePage) => {
 
   const credit = parseInt(getDD('単位', dom), 10);
 
-  const englishSupport = undefined; // TODO
+  // TODO
+  const englishSupport = {
+    languageUsed: {
+      lecture: { ja: '', en: '' },
+      material: { ja: '', en: '' },
+      discussion: { ja: '', en: '' },
+      groupWork: { ja: '', en: '' },
+      presentation: { ja: '', en: '' },
+    },
+    japaneseLanguageSkillLevel: {
+      reading: { ja: '', en: '' },
+      writing: { ja: '', en: '' },
+      requiredSkillsForReadingAndWriting: { ja: '', en: '' },
+      speaking: { ja: '', en: '' },
+      listening: { ja: '', en: '' },
+    },
+  };
 
-  const url = undefined; // TODO
+  const url = {
+    ja: getDD('授業URL', dom),
+    en: getDD('Class URL', domEn),
+  };
 
   const tools = {
     ja: getDD('学生が利用する予定機材/ソフト等', dom), // TODO
@@ -130,9 +156,18 @@ const buildCourseObject = (id: string, coursePages: CoursePage) => {
     en: getDD('Course Summary', domEn),
   };
 
-  const objectives = undefined; // TODO
-  const grading = undefined; // TODO
-  const plan = undefined; // TODO
+  const objectives = {
+    ja: getDD('主題と目標', dom),
+    en: getDD('Objectives / Intended Learning Outcome', domEn),
+  };
+  const grading = {
+    ja: getDD('提出課題・試験・成績評価の方法など', dom),
+    en: getDD('Assignments, Examination & Grade Evaluation', domEn),
+  };
+  const plan = {
+    ja: getDL('授業計画', dom),
+    en: getDL('Class Schedule', domEn),
+  };
 
   const registrationPrerequisiteMandatory = undefined; // TODO
   const registrationPrerequisiteRecommended = undefined; // TODO
@@ -149,31 +184,44 @@ const buildCourseObject = (id: string, coursePages: CoursePage) => {
     en: getDD('Advice', domEn), // TODO
   };
   const duplicateCourses = {
-    ja: getDD('', dom), // TODO
-    en: getDD('', domEn), // TODO
+    ja: getDD('同一科目', dom),
+    en: getDD('Duplicate Course', domEn),
   };
 
-  const needScreening = undefined; // TODO
-  const screening = undefined; // TODO
-  const quota = undefined; // TODO
-  const assignment = undefined; // TODO
+  const needScreening = getDD('Student Screening', domEn) !== 'No student screening to be done';
+  const screening = {
+    ja: getDD('履修制限', dom),
+    en: getDD('Student Screening', domEn),
+  };
+  const quota = getDD('Expected Number of Students', domEn)
+    ? parseInt(getDD('Expected Number of Students', domEn), 10) : undefined;
+  const assignment = {
+    ja: getDD('課題提出タイプ', dom),
+    en: getDD('Screening Assignment', domEn),
+  };
 
   const related = undefined; // TODO
 
   const syllabusURL = undefined; // TODO
 
-  const aspect = undefined; // TODO
+  const aspect = {
+    en: getDD('アスペクト', dom),
+    ja: getDD('Aspect name', domEn),
+  };
 
   const category = {
     ja: getDD('分野', dom),
     en: getDD('Field (Undergraduate) ', domEn),
   };
 
-  const classFormat = undefined; // TODO
+  const classFormat = {
+    ja: getDD('実施形態', dom),
+    en: getDD('Class Format', domEn),
+  };
 
   const types = {
-    ja: getDD('授業形態', dom),
-    en: getDD('Class Style', domEn),
+    ja: getDD('授業形態', dom).split(', '),
+    en: getDD('Class Style', domEn).split(', '),
   };
 
   const language = {
