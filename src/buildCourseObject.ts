@@ -118,22 +118,9 @@ const buildCourseObject = (id: string, coursePages: CoursePage) => {
 
   const credit = parseInt(getDD('単位', dom), 10);
 
-  // TODO
   const englishSupport = {
-    languageUsed: {
-      lecture: { ja: '', en: '' },
-      material: { ja: '', en: '' },
-      discussion: { ja: '', en: '' },
-      groupWork: { ja: '', en: '' },
-      presentation: { ja: '', en: '' },
-    },
-    japaneseLanguageSkillLevel: {
-      reading: { ja: '', en: '' },
-      writing: { ja: '', en: '' },
-      requiredSkillsForReadingAndWriting: { ja: '', en: '' },
-      speaking: { ja: '', en: '' },
-      listening: { ja: '', en: '' },
-    },
+    ja: getDD('授業で英語サポート', dom),
+    en: getDD('English Support', domEn),
   };
 
   const url = {
