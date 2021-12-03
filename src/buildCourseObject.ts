@@ -101,10 +101,10 @@ const buildCourseObject = (id: string, coursePages: CoursePage) => {
     en: domEn('h2 .title').text().trim(),
   };
 
-  // TODO what department do we use in case of multiple departments?
+  // If multiple departments are available, undergraduate department is preferred
   const department = {
-    ja: undefined,
-    en: undefined,
+    ja: getDD('学部・研究科', dom),
+    en: getDD('Department Name', domEn),
   };
 
   const lecturers = getLecturers(dom, domEn);
