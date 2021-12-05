@@ -161,7 +161,7 @@ const createExtractCommand = () => {
       await createDirectoryIfNotExist(outDir);
 
       const saveCourses = extractedCourses.map(async (course) => {
-        const courseId = course.yearClassId;
+        const courseId = course.id;
         const filename = `${courseId}.json`;
         const filepath = path.resolve(outDir, filename);
 
