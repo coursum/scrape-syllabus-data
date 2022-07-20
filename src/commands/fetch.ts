@@ -6,9 +6,9 @@ import rateLimit from 'axios-rate-limit';
 import cheerio from 'cheerio';
 import { Command } from 'commander';
 
-import type { CommandOption, Locales } from './types';
-import { allSettled, printErrors } from './util/allSettled';
-import { createDirectoryIfNotExist, removeDirectoryIfExist } from './util/file';
+import type { CommandOption, Locales } from '../types';
+import { allSettled, printErrors } from '../util/allSettled';
+import { createDirectoryIfNotExist, removeDirectoryIfExist } from '../util/file';
 
 const locales = ['ja', 'en'] as Locales[];
 

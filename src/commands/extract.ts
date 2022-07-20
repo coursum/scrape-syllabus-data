@@ -4,10 +4,10 @@ import path from 'path';
 import cheerio from 'cheerio';
 import { Command } from 'commander';
 
-import buildCourseObject from './buildCourseObject';
-import type { CommandOption, CoursePage, Locales } from './types';
-import { allSettled, printErrors } from './util/allSettled';
-import { createDirectoryIfNotExist, listFiles, removeDirectoryIfExist } from './util/file';
+import buildCourseObject from '../buildCourseObject';
+import type { CommandOption, CoursePage, Locales } from '../types';
+import { allSettled, printErrors } from '../util/allSettled';
+import { createDirectoryIfNotExist, listFiles, removeDirectoryIfExist } from '../util/file';
 
 const locales = ['ja', 'en'] as Locales[];
 
