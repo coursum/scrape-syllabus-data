@@ -39,6 +39,9 @@ module.exports = {
       },
     ],
 
+    'no-redeclare': 'off',
+    '@typescript-eslint/no-redeclare': ['error'],
+
     '@typescript-eslint/consistent-type-imports': 'error',
     '@typescript-eslint/type-annotation-spacing': 'error',
     '@typescript-eslint/member-delimiter-style': 'error',

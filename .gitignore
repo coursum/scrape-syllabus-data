@@ -1,6 +1,8 @@
 node_modules/
 dist/
 data/
+src/inspection/*
+!src/inspection/example.ts
 
 .env
 .idea

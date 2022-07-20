@@ -1,5 +1,5 @@
 import {
-  access, mkdir, readdir, rmdir,
+  access, mkdir, readdir, rm,
 } from 'fs/promises';
 
 const createDirectoryIfNotExist = async (dirpath: string) => {
@@ -14,7 +14,7 @@ const createDirectoryIfNotExist = async (dirpath: string) => {
 const removeDirectoryIfExist = async (dirpath: string) => {
   try {
     await access(dirpath);
-    await rmdir(dirpath, { recursive: true });
+    await rm(dirpath, { recursive: true });
   } catch {
     //
   }
