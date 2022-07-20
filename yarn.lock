@@ -494,9 +494,9 @@ cosmiconfig@^7.0.0:
     path-type "^4.0.0"
     yaml "^1.10.0"
 
-"coursum-types@https://github.com/coursum/coursum-types":
+"coursum-types@https://github.com/coursum/coursum-types#v3":
   version "1.0.0"
-  resolved "https://github.com/coursum/coursum-types#2443a7fa3ee6a6f35fdc872d040cba1e616e0ddc"
+  resolved "https://github.com/coursum/coursum-types#b94f75dc09ad6eb18bab7b7aa0f3949f02632f41"
 
 create-require@^1.1.0:
   version "1.1.1"
