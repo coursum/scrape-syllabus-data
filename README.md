@@ -1,4 +1,6 @@
-This project is for scraping course data from https://syllabus.sfc.keio.ac.jp
+# scrape-syllabus-data
+
+CLI program for scraping course data from https://syllabus.sfc.keio.ac.jp
 
 ## Installation
 
